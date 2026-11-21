@@ -48,3 +48,5 @@ SENSOR_EXTERNAL: Final = 1
 TEMP_AUTO: Final = 0
 TEMP_MANUAL: Final = 1
 SUPPORTED_DEVICE_TYPE: Final = 0x4EAD
+
+SERVICE_SET_TIME: Final = "set_time"

@@ -21,6 +21,8 @@ from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE
 from homeassistant.core import HomeAssistant
 from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 
+from custom_components.hysen.const import DOMAIN, SERVICE_SET_TIME
+
 
 async def test_setup_commands_reload_and_unload(
     hass: HomeAssistant,
@@ -134,3 +136,28 @@ async def test_preset_mode_is_published_after_command(
     state = hass.states.get(state.entity_id)
     assert state.attributes["preset_mode"] == PRESET_AWAY
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_set_time_service_targets_entry_entities(
+    hass: HomeAssistant,
+    entry,
+    client,
+    device: MagicMock,
+) -> None:
+    """The set_time service syncs the clock of the targeted entry."""
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.hysen.FloureonApiClient.from_config",
+        return_value=client,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device.set_time.reset_mock()
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SET_TIME,
+        {ATTR_ENTITY_ID: "climate.hall_thermostat"},
+        blocking=True,
+    )
+    device.set_time.assert_awaited_once()
