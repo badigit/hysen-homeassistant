@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from homeassistant.const import (
-    ATTR_ENTITY_ID,
     CONF_HOST,
     CONF_MAC,
     CONF_TIMEOUT,
@@ -12,6 +11,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.service import async_extract_entity_ids
 from homeassistant.helpers.typing import ConfigType
 
 from .api import FloureonApiClient
@@ -28,7 +28,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ent_reg = er.async_get(hass)
         entry_ids = {
             entity.config_entry_id
-            for entity_id in call.data.get(ATTR_ENTITY_ID, [])
+            for entity_id in await async_extract_entity_ids(hass, call)
             if (entity := ent_reg.async_get(entity_id)) is not None
             and entity.config_entry_id is not None
         }
