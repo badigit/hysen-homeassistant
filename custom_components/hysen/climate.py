@@ -120,6 +120,7 @@ class FloureonClimate(FloureonEntity, ClimateEntity, RestoreEntity):
 
     def __init__(self, coordinator: FloureonDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
+        self._attr_name = None
         options = coordinator.config_entry.options
         self._schedule = options.get(CONF_SCHEDULE, DEFAULT_SCHEDULE)
         self._use_external_temp = options.get(

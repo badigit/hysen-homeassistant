@@ -180,6 +180,7 @@ class FloureonSwitch(FloureonEntity, SwitchEntity):
 
     def __init__(self, coordinator: FloureonDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
+        self._attr_name = None
         options = coordinator.config_entry.options
         self._use_external_temp = options.get(
             CONF_USE_EXTERNAL_TEMP, DEFAULT_USE_EXTERNAL_TEMP

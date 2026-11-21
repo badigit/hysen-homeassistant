@@ -24,4 +24,3 @@ class FloureonEntity(CoordinatorEntity[FloureonDataUpdateCoordinator]):
             model=client.model,
         )
         self._attr_unique_id = client.mac
-        self._attr_name = None
