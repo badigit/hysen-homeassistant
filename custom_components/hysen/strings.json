@@ -55,5 +55,11 @@
     "command_failed": {
       "message": "The thermostat command failed: {error}"
     }
+  },
+  "services": {
+    "set_time": {
+      "name": "Set time",
+      "description": "Synchronises the thermostat clock with the current Home Assistant time. Useful in a scheduled automation to correct clock drift and daylight saving changes."
+    }
   }
 }

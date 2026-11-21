@@ -2,13 +2,47 @@
 
 from __future__ import annotations
 
-from homeassistant.const import CONF_HOST, CONF_MAC, CONF_TIMEOUT, CONF_TYPE, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    CONF_HOST,
+    CONF_MAC,
+    CONF_TIMEOUT,
+    CONF_TYPE,
+    Platform,
+)
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import ConfigType
 
 from .api import FloureonApiClient
+from .const import DOMAIN, SERVICE_SET_TIME
 from .coordinator import FloureonConfigEntry, FloureonDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SWITCH]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register integration-level services."""
+
+    async def _async_set_time(call: ServiceCall) -> None:
+        ent_reg = er.async_get(hass)
+        entry_ids = {
+            entity.config_entry_id
+            for entity_id in call.data.get(ATTR_ENTITY_ID, [])
+            if (entity := ent_reg.async_get(entity_id)) is not None
+            and entity.config_entry_id is not None
+        }
+        for entry_id in entry_ids:
+            entry = hass.config_entries.async_get_entry(entry_id)
+            if (
+                entry is not None
+                and entry.domain == DOMAIN
+                and getattr(entry, "runtime_data", None) is not None
+            ):
+                await entry.runtime_data.async_set_time()
+
+    hass.services.async_register(DOMAIN, SERVICE_SET_TIME, _async_set_time)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: FloureonConfigEntry) -> bool:

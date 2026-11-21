@@ -1,0 +1,7 @@
+set_time:
+  target:
+    entity:
+      integration: hysen
+      domain:
+        - climate
+        - switch
