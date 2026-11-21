@@ -28,7 +28,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ent_reg = er.async_get(hass)
         entry_ids = {
             entity.config_entry_id
-            for entity_id in await async_extract_entity_ids(hass, call)
+            for entity_id in await async_extract_entity_ids(call)
             if (entity := ent_reg.async_get(entity_id)) is not None
             and entity.config_entry_id is not None
         }
