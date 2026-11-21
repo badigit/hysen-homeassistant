@@ -44,6 +44,23 @@
     }
   },
   "exceptions": {"command_failed": {"message": "The thermostat command failed: {error}"}},
+  "entity": {
+    "sensor": {
+      "room_temperature": {"name": "Room temperature"},
+      "floor_temperature": {"name": "Floor temperature"}
+    },
+    "switch": {
+      "child_lock": {"name": "Child lock"},
+      "anti_freeze": {"name": "Anti-freeze"}
+    },
+    "number": {
+      "hysteresis": {"name": "Hysteresis"},
+      "sensor_calibration": {"name": "Sensor calibration"}
+    },
+    "button": {
+      "sync_time": {"name": "Sync clock"}
+    }
+  },
   "services": {
     "set_time": {
       "name": "Set time",

@@ -44,6 +44,23 @@
     }
   },
   "exceptions": {"command_failed": {"message": "Команда термостату не выполнена: {error}"}},
+  "entity": {
+    "sensor": {
+      "room_temperature": {"name": "Температура воздуха"},
+      "floor_temperature": {"name": "Температура пола"}
+    },
+    "switch": {
+      "child_lock": {"name": "Защита от детей"},
+      "anti_freeze": {"name": "Защита от замерзания"}
+    },
+    "number": {
+      "hysteresis": {"name": "Гистерезис"},
+      "sensor_calibration": {"name": "Калибровка датчика"}
+    },
+    "button": {
+      "sync_time": {"name": "Синхронизировать часы"}
+    }
+  },
   "services": {
     "set_time": {
       "name": "Установить время",

@@ -18,7 +18,13 @@ from .api import FloureonApiClient
 from .const import DOMAIN, SERVICE_SET_TIME
 from .coordinator import FloureonConfigEntry, FloureonDataUpdateCoordinator
 
-PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SWITCH]
+PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.CLIMATE,
+    Platform.NUMBER,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

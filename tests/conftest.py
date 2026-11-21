@@ -31,6 +31,7 @@ RAW_STATUS = {
     "auto_mode": 1,
     "loop_mode": 0,
     "sensor": 1,
+    "osv": 42,
     "dif": 2,
     "svh": 35,
     "svl": 5,
@@ -56,6 +57,7 @@ def device() -> MagicMock:
         "get_full_status",
         "set_time",
         "set_mode",
+        "set_advanced",
         "set_temp",
         "set_power",
     ):
