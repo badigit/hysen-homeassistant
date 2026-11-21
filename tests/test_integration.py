@@ -161,3 +161,60 @@ async def test_set_time_service_targets_entry_entities(
         blocking=True,
     )
     device.set_time.assert_awaited_once()
+
+
+async def test_auxiliary_entities_read_and_write(
+    hass: HomeAssistant,
+    entry,
+    client,
+    device: MagicMock,
+) -> None:
+    """Probes, flags and advanced settings are exposed as entities."""
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.hysen.FloureonApiClient.from_config",
+        return_value=client,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.hall_thermostat_room_temperature").state == "21.5"
+    assert hass.states.get("sensor.hall_thermostat_floor_temperature").state == "25.0"
+    assert hass.states.get("number.hall_thermostat_hysteresis").state == "2.0"
+    assert hass.states.get("switch.hall_thermostat_child_lock").state == "off"
+    assert hass.states.get("switch.hall_thermostat_anti_freeze").state == "on"
+
+    await hass.services.async_call(
+        "switch",
+        "turn_on",
+        {ATTR_ENTITY_ID: "switch.hall_thermostat_child_lock"},
+        blocking=True,
+    )
+    device.set_power.assert_any_await(1, remote_lock=1, heating_cooling=0)
+
+    await hass.services.async_call(
+        "number",
+        "set_value",
+        {ATTR_ENTITY_ID: "number.hall_thermostat_hysteresis", "value": 3},
+        blocking=True,
+    )
+    device.set_advanced.assert_awaited_once()
+    assert device.set_advanced.await_args.args[3] == 3
+
+    await hass.services.async_call(
+        "switch",
+        "turn_off",
+        {ATTR_ENTITY_ID: "switch.hall_thermostat_anti_freeze"},
+        blocking=True,
+    )
+    assert device.set_advanced.await_count == 2
+    assert device.set_advanced.await_args.args[7] == 0
+
+    device.set_time.reset_mock()
+    await hass.services.async_call(
+        "button",
+        "press",
+        {ATTR_ENTITY_ID: "button.hall_thermostat_sync_clock"},
+        blocking=True,
+    )
+    device.set_time.assert_awaited_once()

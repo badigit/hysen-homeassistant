@@ -7,6 +7,7 @@ serialises every call through one lock.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ class FloureonStatus:
     auto_mode: int | None
     loop_mode: int | None
     sensor: int | None
+    osv: int | None
     hysteresis: float | None
     max_temp: float | None
     min_temp: float | None
@@ -54,6 +56,7 @@ class FloureonStatus:
             auto_mode=_integer(raw.get("auto_mode")),
             loop_mode=_integer(raw.get("loop_mode")),
             sensor=_integer(raw.get("sensor")),
+            osv=_integer(raw.get("osv")),
             hysteresis=_number(raw.get("dif")),
             max_temp=_number(raw.get("svh")),
             min_temp=_number(raw.get("svl")),
@@ -183,6 +186,32 @@ class FloureonApiClient:
         await self.device.set_power(1, heating_cooling=int(cooling))
         await self.device.set_mode(0, schedule, sensor)
         await self.device.set_temp(temperature)
+
+    async def set_remote_lock(
+        self, locked: bool, *, power: int, heating_cooling: int
+    ) -> None:
+        await self.device.set_power(
+            power, remote_lock=int(locked), heating_cooling=heating_cooling
+        )
+
+    async def set_advanced(self, status: FloureonStatus, **changes: Any) -> None:
+        """Write one advanced field while preserving the rest.
+
+        The device only accepts the whole advanced block, so the change is
+        merged into the latest snapshot before being sent.
+        """
+        merged = dataclasses.replace(status, **changes)
+        await self.device.set_advanced(
+            (merged.loop_mode or 0) << 4 | (merged.auto_mode or 0),
+            merged.sensor or 0,
+            merged.osv or 42,
+            int(merged.hysteresis or 2),
+            int(merged.max_temp or 35),
+            int(merged.min_temp or 5),
+            merged.room_temp_adjustment or 0.0,
+            int(bool(merged.anti_freeze)),
+            int(bool(merged.power_on_memory)),
+        )
 
     async def close(self) -> None:
         await self.device.aclose()

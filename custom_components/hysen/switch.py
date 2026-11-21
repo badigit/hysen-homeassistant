@@ -1,19 +1,21 @@
-"""Legacy switch-mode entity for Floureon thermostats."""
+"""Switch entities for Floureon thermostats."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.climate.const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
     CONF_TIMEOUT,
     CONF_UNIQUE_ID,
+    EntityCategory,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
@@ -86,15 +88,91 @@ async def async_setup_platform(
     )
 
 
+@dataclass(frozen=True, kw_only=True)
+class FloureonSwitchDescription(SwitchEntityDescription):
+    """Describe a writable boolean flag on the thermostat."""
+
+    status_field: str
+    advanced: bool = True
+
+
+CONFIG_SWITCHES: tuple[FloureonSwitchDescription, ...] = (
+    FloureonSwitchDescription(
+        key="child_lock",
+        translation_key="child_lock",
+        status_field="remote_lock",
+        advanced=False,
+    ),
+    FloureonSwitchDescription(
+        key="anti_freeze",
+        translation_key="anti_freeze",
+        status_field="anti_freeze",
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: FloureonConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up switch mode when selected in options."""
-    if entry.options.get(CONF_ENTITY_TYPE, DEFAULT_ENTITY_TYPE) != ENTITY_TYPE_SWITCH:
-        return
-    async_add_entities([FloureonSwitch(entry.runtime_data)])
+    """Set up config switches plus the optional legacy switch entity."""
+    coordinator = entry.runtime_data
+    entities: list = [
+        FloureonConfigSwitch(coordinator, description)
+        for description in CONFIG_SWITCHES
+    ]
+    if entry.options.get(CONF_ENTITY_TYPE, DEFAULT_ENTITY_TYPE) == ENTITY_TYPE_SWITCH:
+        entities.append(FloureonSwitch(coordinator))
+    async_add_entities(entities)
+
+
+class FloureonConfigSwitch(FloureonEntity, SwitchEntity):
+    """A writable boolean device setting."""
+
+    entity_description: FloureonSwitchDescription
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(
+        self,
+        coordinator: FloureonDataUpdateCoordinator,
+        description: FloureonSwitchDescription,
+    ) -> None:
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{coordinator.client.mac}_{description.key}"
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return the last reported flag state."""
+        value = getattr(self.coordinator.data, self.entity_description.status_field)
+        return None if value is None else bool(value)
+
+    async def _async_set(self, on: bool) -> None:
+        data = self.coordinator.data
+        client = self.coordinator.client
+        if self.entity_description.advanced:
+            call = partial(
+                client.set_advanced,
+                data,
+                **{self.entity_description.status_field: on},
+            )
+        else:
+            call = partial(
+                client.set_remote_lock,
+                on,
+                power=int(data.power),
+                heating_cooling=int(data.heating_cooling),
+            )
+        await self.coordinator.async_command(call)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Enable the flag."""
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Disable the flag."""
+        await self._async_set(False)
 
 
 class FloureonSwitch(FloureonEntity, SwitchEntity):
