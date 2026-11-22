@@ -262,6 +262,22 @@ async def test_diagnostics_redacts_identity(hass, entry, client, status) -> None
     assert diagnostics["config_entry"]["data"]["host"] == "**REDACTED**"
 
 
+async def test_preset_command_writes_through_transaction(
+    hass, entry, client, status, device
+) -> None:
+    """The preset call must reach the device with status as first arg."""
+    coordinator = _coordinator(hass, entry, client, status)
+    coordinator.async_request_refresh = AsyncMock()
+    entity = FloureonClimate(coordinator)
+    entity.async_write_ha_state = MagicMock()
+    entity._away_set_point = 16.0
+
+    await entity.async_set_preset_mode(PRESET_AWAY)
+
+    device.set_power.assert_awaited_once_with(1, remote_lock=0, heating_cooling=0)
+    device.set_temp.assert_awaited_once_with(16.0)
+
+
 async def test_failed_away_command_keeps_local_preset(
     hass, entry, client, status
 ) -> None:

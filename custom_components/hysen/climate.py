@@ -272,9 +272,9 @@ class FloureonClimate(FloureonEntity, ClimateEntity, RestoreEntity):
         await self.coordinator.async_command_with_status(
             partial(
                 self.coordinator.client.set_preset_temperature,
-                float(target),
-                self._schedule,
-                self._sensor,
+                temperature=float(target),
+                schedule=self._schedule,
+                sensor=self._sensor,
                 cooling=self._use_cooling,
             )
         )
