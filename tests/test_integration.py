@@ -63,7 +63,7 @@ async def test_setup_commands_reload_and_unload(
         {ATTR_ENTITY_ID: state.entity_id, ATTR_HVAC_MODE: HVACMode.OFF},
         blocking=True,
     )
-    device.set_power.assert_any_await(0, heating_cooling=0)
+    device.set_power.assert_any_await(0, remote_lock=0, heating_cooling=0)
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert hass.states.get(state.entity_id).state == "unavailable"

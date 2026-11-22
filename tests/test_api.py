@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -76,27 +77,46 @@ def test_from_config_recreates_without_discovery(device: MagicMock) -> None:
 
 
 async def test_read_and_all_commands(
-    client: FloureonApiClient, device: MagicMock
+    client: FloureonApiClient, device: MagicMock, status: FloureonStatus
 ) -> None:
     assert (await client.read_status()).target_temp == 23
     await client.authenticate()
     await client.set_time(datetime(2026, 8, 31, 12, 34, 56, tzinfo=UTC))
     await client.set_manual_temperature(22.5, 2, 1)
-    await client.set_hvac_mode(power=1, mode=1, schedule=2, sensor=1, cooling=True)
-    await client.set_hvac_mode(power=0, mode=0, schedule=0, sensor=0, cooling=False)
-    await client.set_switch_state(power=0, temperature=None, schedule=0, sensor=0)
-    await client.set_switch_state(power=1, temperature=20, schedule=0, sensor=0)
-    await client.set_preset_temperature(10, 0, 0)
-    await client.set_preset_temperature(18, 1, 1, cooling=True)
+    await client.set_hvac_mode(
+        status, power=1, mode=1, schedule=2, sensor=1, cooling=True
+    )
+    await client.set_hvac_mode(
+        status, power=0, mode=0, schedule=0, sensor=0, cooling=False
+    )
+    await client.set_switch_state(
+        status, power=0, temperature=None, schedule=0, sensor=0
+    )
+    await client.set_switch_state(status, power=1, temperature=20, schedule=0, sensor=0)
+    await client.set_preset_temperature(status, 10, 0, 0)
+    await client.set_preset_temperature(status, 18, 1, 1, cooling=True)
+    await client.set_remote_lock(True, status)
     await client.close()
 
     device.auth.assert_awaited_once()
     device.set_time.assert_awaited_once_with(12, 34, 56, 1)
     device.set_mode.assert_any_await(0, 2, 1)
     device.set_temp.assert_any_await(22.5)
-    device.set_power.assert_any_await(1, heating_cooling=1)
-    device.set_power.assert_any_await(0)
+    device.set_power.assert_any_await(1, remote_lock=0, heating_cooling=1)
+    device.set_power.assert_any_await(0, remote_lock=0, heating_cooling=0)
+    device.set_power.assert_any_await(1, remote_lock=1, heating_cooling=0)
     device.aclose.assert_awaited_once()
+
+
+async def test_commands_preserve_remote_lock(
+    client: FloureonApiClient, device: MagicMock, status: FloureonStatus
+) -> None:
+    """HVAC commands must not reset a locked keypad back to unlocked."""
+    locked = replace(status, remote_lock=True)
+    await client.set_hvac_mode(
+        locked, power=0, mode=0, schedule=0, sensor=0, cooling=False
+    )
+    device.set_power.assert_awaited_once_with(0, remote_lock=1, heating_cooling=0)
 
 
 async def test_authentication_false_is_an_error(client, device) -> None:

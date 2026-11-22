@@ -156,42 +156,63 @@ class FloureonApiClient:
         await self.device.set_temp(temperature)
 
     async def set_hvac_mode(
-        self, *, power: int, mode: int, schedule: int, sensor: int, cooling: bool
+        self,
+        status: FloureonStatus,
+        *,
+        power: int,
+        mode: int,
+        schedule: int,
+        sensor: int,
+        cooling: bool,
     ) -> None:
-        await self.device.set_power(power, heating_cooling=int(cooling))
+        await self.device.set_power(
+            power,
+            remote_lock=int(bool(status.remote_lock)),
+            heating_cooling=int(cooling),
+        )
         if power:
             await self.device.set_mode(mode, schedule, sensor)
 
     async def set_switch_state(
         self,
+        status: FloureonStatus,
         *,
         power: int,
         temperature: float | None,
         schedule: int,
         sensor: int,
     ) -> None:
-        await self.device.set_power(power)
+        await self.device.set_power(
+            power,
+            remote_lock=int(bool(status.remote_lock)),
+            heating_cooling=int(status.heating_cooling),
+        )
         if temperature is not None:
             await self.device.set_mode(0, schedule, sensor)
             await self.device.set_temp(temperature)
 
     async def set_preset_temperature(
         self,
+        status: FloureonStatus,
         temperature: float,
         schedule: int,
         sensor: int,
         *,
         cooling: bool = False,
     ) -> None:
-        await self.device.set_power(1, heating_cooling=int(cooling))
+        await self.device.set_power(
+            1,
+            remote_lock=int(bool(status.remote_lock)),
+            heating_cooling=int(cooling),
+        )
         await self.device.set_mode(0, schedule, sensor)
         await self.device.set_temp(temperature)
 
-    async def set_remote_lock(
-        self, locked: bool, *, power: int, heating_cooling: int
-    ) -> None:
+    async def set_remote_lock(self, locked: bool, status: FloureonStatus) -> None:
         await self.device.set_power(
-            power, remote_lock=int(locked), heating_cooling=heating_cooling
+            int(status.power),
+            remote_lock=int(locked),
+            heating_cooling=int(status.heating_cooling),
         )
 
     async def set_advanced(self, status: FloureonStatus, **changes: Any) -> None:

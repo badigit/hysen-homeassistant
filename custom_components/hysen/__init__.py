@@ -45,7 +45,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 and entry.domain == DOMAIN
                 and getattr(entry, "runtime_data", None) is not None
             ):
-                await entry.runtime_data.async_set_time()
+                await entry.runtime_data.async_sync_time()
 
     hass.services.async_register(DOMAIN, SERVICE_SET_TIME, _async_set_time)
     return True

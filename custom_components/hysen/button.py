@@ -34,4 +34,4 @@ class FloureonSyncTimeButton(FloureonEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Synchronise the device clock; failures surface to the caller."""
-        await self.coordinator.async_command(self.coordinator.client.set_time)
+        await self.coordinator.async_sync_time()
