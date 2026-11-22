@@ -149,22 +149,15 @@ class FloureonConfigSwitch(FloureonEntity, SwitchEntity):
         return None if value is None else bool(value)
 
     async def _async_set(self, on: bool) -> None:
-        data = self.coordinator.data
         client = self.coordinator.client
         if self.entity_description.advanced:
             call = partial(
                 client.set_advanced,
-                data,
                 **{self.entity_description.status_field: on},
             )
         else:
-            call = partial(
-                client.set_remote_lock,
-                on,
-                power=int(data.power),
-                heating_cooling=int(data.heating_cooling),
-            )
-        await self.coordinator.async_command(call)
+            call = partial(client.set_remote_lock, on)
+        await self.coordinator.async_command_with_status(call)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the flag."""
@@ -213,41 +206,40 @@ class FloureonSwitch(FloureonEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Power on and apply the configured on temperature."""
-        data = self.coordinator.data
-        temperature = (
-            data.max_temp or DEFAULT_MAX_TEMP
-            if self._turn_on_mode == MAX_TEMP
-            else float(self._turn_on_mode)
-        )
-        await self.coordinator.async_command(
-            partial(
-                self.coordinator.client.set_switch_state,
+        await self.coordinator.async_command_with_status(
+            lambda status: self.coordinator.client.set_switch_state(
+                status,
                 power=POWER_ON,
-                temperature=temperature,
-                schedule=data.loop_mode or 0,
+                temperature=(
+                    status.max_temp or DEFAULT_MAX_TEMP
+                    if self._turn_on_mode == MAX_TEMP
+                    else float(self._turn_on_mode)
+                ),
+                schedule=status.loop_mode or 0,
                 sensor=self._sensor,
             )
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Power off or lower the set point, matching legacy semantics."""
-        data = self.coordinator.data
-        if self._turn_off_mode == TURN_OFF:
-            power = POWER_OFF
-            temperature = None
-        else:
-            power = POWER_ON
-            temperature = (
-                data.min_temp or DEFAULT_MIN_TEMP
-                if self._turn_off_mode == MIN_TEMP
-                else float(self._turn_off_mode)
-            )
-        await self.coordinator.async_command(
-            partial(
-                self.coordinator.client.set_switch_state,
+
+        def command(status):
+            if self._turn_off_mode == TURN_OFF:
+                power = POWER_OFF
+                temperature = None
+            else:
+                power = POWER_ON
+                temperature = (
+                    status.min_temp or DEFAULT_MIN_TEMP
+                    if self._turn_off_mode == MIN_TEMP
+                    else float(self._turn_off_mode)
+                )
+            return self.coordinator.client.set_switch_state(
+                status,
                 power=power,
                 temperature=temperature,
-                schedule=data.loop_mode or 0,
+                schedule=status.loop_mode or 0,
                 sensor=self._sensor,
             )
-        )
+
+        await self.coordinator.async_command_with_status(command)

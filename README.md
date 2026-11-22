@@ -86,4 +86,4 @@ MIT. This project is not affiliated with any of the device manufacturers mention
 
 ## Existing installations and integration ID
 
-The displayed integration name is **Hysen Thermostat (Broadlink)**, but the Home Assistant domain and installation folder remain `hysen`. Existing config entries and entity IDs are preserved; no reinstallation is required. The repository URL is unchanged.
+In version 3.x the technical domain changed from `floureon` to `hysen`. There is no automatic migration: when upgrading from 2.x releases, remove the old `floureon` entry and component, then re-add the thermostat — entity IDs must be restored manually if they are used in automations. Updates within the `hysen` line (3.x and later) keep config entries and entity IDs.

@@ -95,10 +95,30 @@ class FloureonDataUpdateCoordinator(DataUpdateCoordinator[FloureonStatus]):
             ) from err
         await self.async_request_refresh()
 
+    async def async_command_with_status(
+        self, call: Callable[[FloureonStatus], Awaitable[Any]]
+    ) -> None:
+        """Read a fresh snapshot and run a command in one transaction.
+
+        Several device writes merge the caller's change into the current
+        register state, so the snapshot must be read inside the lock that
+        serialises the write.
+        """
+
+        async def _transaction() -> None:
+            status = await self.client.read_status()
+            await call(status)
+
+        await self.async_command(_transaction)
+
     async def async_set_time(self) -> None:
         """Best-effort clock synchronisation after setup."""
         try:
-            now = dt_util.now()
-            await self.async_command(lambda: self.client.set_time(now))
+            await self.async_sync_time()
         except HomeAssistantError as err:
             _LOGGER.debug("Could not set thermostat time: %s", err)
+
+    async def async_sync_time(self) -> None:
+        """Synchronise the device clock; failures surface to the caller."""
+        now = dt_util.now()
+        await self.async_command(lambda: self.client.set_time(now))

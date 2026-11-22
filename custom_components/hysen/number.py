@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -33,7 +32,7 @@ NUMBERS: tuple[FloureonNumberDescription, ...] = (
         key="hysteresis",
         translation_key="hysteresis",
         status_field="hysteresis",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         native_min_value=1,
         native_max_value=9,
@@ -44,7 +43,7 @@ NUMBERS: tuple[FloureonNumberDescription, ...] = (
         key="sensor_calibration",
         translation_key="sensor_calibration",
         status_field="room_temp_adjustment",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         native_min_value=-9.9,
         native_max_value=9.9,
@@ -88,10 +87,8 @@ class FloureonNumber(FloureonEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Merge the new value into the advanced block."""
-        await self.coordinator.async_command(
-            partial(
-                self.coordinator.client.set_advanced,
-                self.coordinator.data,
-                **{self.entity_description.status_field: value},
+        await self.coordinator.async_command_with_status(
+            lambda status: self.coordinator.client.set_advanced(
+                status, **{self.entity_description.status_field: value}
             )
         )

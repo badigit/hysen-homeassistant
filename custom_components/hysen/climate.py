@@ -244,7 +244,7 @@ class FloureonClimate(FloureonEntity, ClimateEntity, RestoreEntity):
         power = POWER_OFF if hvac_mode is HVACMode.OFF else POWER_ON
         mode = MODE_AUTO if hvac_mode is HVACMode.AUTO else MODE_MANUAL
         cooling = self._use_cooling and hvac_mode is not HVACMode.OFF
-        await self.coordinator.async_command(
+        await self.coordinator.async_command_with_status(
             partial(
                 self.coordinator.client.set_hvac_mode,
                 power=power,
@@ -269,12 +269,12 @@ class FloureonClimate(FloureonEntity, ClimateEntity, RestoreEntity):
         )
         if target is None:
             target = self.coordinator.data.target_temp or self.min_temp
-        await self.coordinator.async_command(
+        await self.coordinator.async_command_with_status(
             partial(
                 self.coordinator.client.set_preset_temperature,
-                float(target),
-                self._schedule,
-                self._sensor,
+                temperature=float(target),
+                schedule=self._schedule,
+                sensor=self._sensor,
                 cooling=self._use_cooling,
             )
         )
