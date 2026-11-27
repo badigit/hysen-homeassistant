@@ -8,7 +8,7 @@ dependencies = []
 [dependency-groups]
 dev = [
     "broadlink-async==1.2.1",
-    "pytest-homeassistant==2026.11.2",
+    "pytest-homeassistant==2026.11.3",
     "ruff>=0.14.0",
     "pytest-timeout>=2.3",
     "pytest-cov>=6",
